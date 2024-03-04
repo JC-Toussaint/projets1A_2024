@@ -1,0 +1,3 @@
+#chemin menant aux librairies dynamiques lgsl.so et lgslcblas.so
+export LD_LIBRARY_PATH=$HOME/extralib/lib:$LD_LIBRARY_PATH
+./sonde

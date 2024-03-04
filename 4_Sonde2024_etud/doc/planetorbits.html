@@ -1,0 +1,618 @@
+<html><head><title>Mean orbital elements</title>
+
+<link rel="SHORTCUT ICON" href="http://home.att.net/%7Esrschmitt/favicon.ico">
+<link rel="stylesheet" type="text/css" href="planetorbits_fichiers/standard.css">
+<script language="JavaScript" src="planetorbits_fichiers/feedback.js"></script>
+<script language="JavaScript" src="planetorbits_fichiers/commjnc1.js"></script></head>
+<body bgcolor="white" text="black">
+
+<center>
+<!-- google -->
+<script type="text/javascript"><!--
+google_ad_client = "pub-8195248024094868";
+google_ad_width = 728;
+google_ad_height = 90;
+google_ad_format = "728x90_as";
+google_ad_channel ="";
+//--></script>
+<script type="text/javascript" src="planetorbits_fichiers/show_ads">
+</script><iframe name="google_ads_frame" src="planetorbits_fichiers/ads.htm" marginwidth="0" marginheight="0" vspace="0" hspace="0" allowtransparency="true" frameborder="0" height="90" scrolling="no" width="728">&lt;img&gt;</iframe>
+<!-- google -->
+</center>
+
+<hr>
+|<a href="http://home.att.net/%7Esrschmitt/index.html"> home </a>
+|<a onclick="feedback()" href="#top"> send comment </a>
+|<a onclick="send_to()" href="#top"> send link </a>
+|<a onclick="bookmark()" href="#top"> add bookmark </a>| 
+<hr>
+<h2>Computing planet positions using mean orbital elements</h2>
+<h4>by Stephen R. Schmitt</h4>
+<hr>
+<h3>Mean orbital elements</h3>
+<p>
+The orbits of the major planets can be modeled as ellipses with the Sun at one focus. The 
+effect of gravitational interactions between the planets perturbs these orbits so that 
+an ellipse is not a exact match with a true orbit. Six numbers, the mean orbital elements, 
+specify an elliptical orbit. Mean orbital elements average the effects of gravitational 
+forces between planets. Calculation of a planets position based on these mean elements can be 
+inaccurate by a few minutes of arc. 
+</p><p>
+The position of a planet (the word originally meant wandering star) varies with time. The  
+daily motion changes the mean longitude by the average number of degrees the planet moves in 
+one (mean solar) day. The other elements change slowly with time. They are modeled 
+using power series expansions of centuries from some fundamental epoch. Here, we use the 
+elements with their linear rates of change from the epoch J2000 (12:00 UT, Jan 1, 2000). 
+</p><p>
+Planet positions are computed in the Equatorial coordinate system as right ascension (RA) 
+and declination (DEC).  These give the coordinates of the planet with respect to the fixed 
+stars. The origin for RA is the vernal equinox. Because the orientation of the Earth's axis 
+is changing slowly with time, celestial coordinates must always be referred to an epoch, 
+or date. By using orbital elements referred to epoch J2000, the orbits of the planets are 
+described in a coordinate system that is based on the position the vernal equinox will have 
+at J2000. The effect of nutation (the Earth's axis is nodding) is ignored since positions 
+are relative to the mean ecliptic of J2000. The aberration effect caused by the finite speed 
+of light is also ignored. 
+
+</p><h3>Computation steps</h3>
+<p> 
+The main steps in calculating the RA and DEC of a planet from the mean elements are: 
+</p><ol>
+<li>Find the day number or time since the date of the elements 
+</li><li>Find the average (or mean) orbital elements of the planet
+</li><li>Find the true anomaly, the angle to the planet from perihelion<br>
+    (helio means Sun) 
+</li><li>Find the heliocentric radius, distance to planet from sun
+</li><li>Find the heliocentric ecliptic rectangular coordinates of the planet 
+</li><li>Find the heliocentric ecliptic rectangular coordinates of the Earth 
+</li><li>Transform the heliocentric coordinates to geocentric coordinates<br>
+    (geo means Earth)
+</li><li>Transform the geocentric ecliptic coordinates to equatorial coordinates 
+</li><li>Calculate the RA and DEC and the distance to the planet from Earth 
+</li></ol>
+<p>
+</p><h4>Notation</h4>
+<p><u>Elements</u>
+</p><p><tt>i</tt> - inclination (degrees), angle between the plane of the ecliptic (the plane 
+      of Earth's orbit about the Sun) and the plane of the planets orbit
+<br><tt>O</tt> - longitude of ascending node (degrees), the position in the orbit where the elliptical 
+      path of the planet passes through the plane of the ecliptic, from below the 
+      plane to above the plane 
+<br><tt>w</tt> - longitude of perihelion (degrees), the position in the orbit where the planet is 
+      closest to the Sun 
+<br><tt>a</tt> - mean distance (AU), the value of the semi-major axis of the orbit
+      (AU - Astronomical Unit - average Sun to Earth distance)
+<br><tt>e</tt> - eccentricity of the ellipse which describes the orbit (dimensionless)
+<br><tt>L</tt> - mean longitude (degrees), the position of the planet in the orbit
+
+</p><p><u>Calculated quantities</u>
+</p><p><tt>M</tt> - mean anomaly (degrees)
+<br><tt>V</tt> - true anomaly (degrees)
+<br><tt>R</tt> - heliocentric radius (AU)
+<br><tt>X,Y,Z</tt> - rectangular coordinates (AU)
+<br><tt>RA</tt> - right ascension (hour angle) 
+<br><tt>DEC</tt> - declination (degrees)
+
+</p><h4>Position of the planet in its orbit</h4>
+<p><u>The day number</u>
+</p><p>The day number is used to compute values of all time varying quantities. It is a measure 
+of the number of days, hours, minutes, and seconds since epoch J2000. This can be calculated from 
+the date using:
+</p><blockquote> 
+<pre>h = hour + minute/60 + second/3600
+D = 367*year - 7*(year + (month + 9) div 12) div 4 + 275*month div 9 + day - 730531.5 + h/24
+</pre>
+</blockquote>
+where <tt>div</tt> denotes integer division (for example, <tt>17 div 4 = 4)</tt>.
+
+<p><u>The average (or mean) orbital elements of the planet</u>
+</p><p>Each of the orbital elements varies with time. The most rapidly changing element is the 
+mean longitude, which changes due to the planets orbital motion about the Sun. The other elements 
+change slowly. Gravitational forces between the planets cause these slow changes.
+For example, the orbital elements of the planet Mars are computed from:
+</p><blockquote> 
+<pre>a = 1.52366231 -  0.00007221*cy
+e = 0.09341233 +  0.00011902*cy
+i =    1.85061 -       25.47*cy/3600
+O =   49.57854 -     1020.19*cy/3600
+w =  336.04084 +     1560.78*cy/3600
+L =  355.45332 + 68905103.78*cy/3600
+</pre>
+</blockquote>
+where <tt>cy</tt> is the number of centuries since J2000 and is computed using:
+<blockquote> 
+<pre>cy = D/36525.0
+</pre>
+</blockquote>
+<p><u>The mean anomaly of the planet</u>
+</p><p>The mean anomaly gives the planet's angular position for a circular orbit with radius 
+equal to the semi major axis. It is computed directly from the elements using: 
+</p><blockquote> 
+<pre>M = L - w 
+</pre>
+</blockquote>
+To give more precise computer calculations, the value of <tt>M</tt> should be in the 
+range <tt>0...360</tt>.  
+
+<p><u>The true anomaly of the planet</u>
+</p><p>Kepler's second law states that the radius vector of a planet sweeps out equal areas in 
+equal times. The planet must speed up and slow down in its orbit. The true anomaly gives 
+the planets actual angular position in its orbit. It is the angle (at the Sun) between 
+perihelion of the orbit and the current location of the planet. To obtain its value, first 
+compute the eccentric anomaly, <tt>E</tt>, from <tt>M</tt>, and the eccentricity, <tt>e</tt>.  
+As a first approximation:
+</p><blockquote> 
+<pre>E = M + e·sin(M)·(1.0 + e·cos(M))
+</pre>
+</blockquote>
+Then iterate using:
+<blockquote> 
+<pre>E' = E
+          E' - e·sin(E') - M
+E  = E' - ------------------
+            1 - e·cos(E')
+</pre>
+</blockquote>
+until the magnitude of <tt>E - E'</tt> is sufficiently close to zero. Finally, 
+convert the eccentric anomaly to the true anomaly using:
+<blockquote> 
+<pre>V  = 2·arctan(sqrt((1 + e)/(1 - e))·tan(0.5·E))
+</pre>
+</blockquote>
+And ensure that the result is in the range <tt>0...360</tt>
+
+<p><u>The heliocentric radius of the planet</u>
+</p><p>The heliocentric radius is the distance from the focus of the ellipse (i.e. the Sun) to the 
+planet.  It is given by a formula based on the geometry of an ellipse:
+</p><blockquote> 
+<pre>     a·(1 - e<sup>2</sup>)
+R = ------------
+    1 + e·cos(V)
+</pre>
+</blockquote>
+
+<p><u>The heliocentric coordinates of the planet</u>
+</p><p>By using the true anomaly, the heliocentric radius, and some of the orbital 
+elements, the formulas below compute the heliocentric coordinates in the plane of the
+ecliptic. 
+</p><blockquote> 
+<pre>X<sub>H</sub> = R·[cos(O)·cos(V + w - O) - sin(O)·sin(V + w - O)·cos(i)]
+Y<sub>H</sub> = R·[sin(O)·cos(V + w - O) + cos(O)·sin(V + w - O)·cos(i)]
+Z<sub>H</sub> = R·[sin(V + w - O)·sin(i)]
+</pre>
+</blockquote>
+
+<p><u>The heliocentric coordinates of Earth</u>
+</p><p>These are computed using the same method as above and are denoted as: 
+<tt>X<sub>E</sub> Y<sub>E</sub> Z<sub>E</sub></tt>.
+
+</p><p><u>Geocentric ecliptic coordinates of the planet</u>
+</p><p>The origin of the coordinate system is changed from the Sun to the Earth by subtracting 
+the Earth's heliocentric coordinates from those of the planet: 
+</p><blockquote> 
+<pre>X<sub>G</sub> = X<sub>H</sub> - X<sub>E</sub>
+Y<sub>G</sub> = Y<sub>H</sub> - Y<sub>E</sub>
+Z<sub>G</sub> = Z<sub>H</sub> - Z<sub>E</sub>  
+</pre>
+</blockquote>
+
+<p><u>The geocentric equatorial coordinates of the planet</u>
+</p><p>To change the coordinate system from geocentric ecliptic to geocentric equatorial, rotate 
+around the <tt>X</tt>-axis by an angle equal to the obliquity of the ecliptic, <tt>ecl</tt>. 
+The <tt>X</tt>-axis points towards the vernal equinox, where the Sun crosses the celestial 
+equator in the spring. 
+</p><blockquote> 
+<pre>ecl = 23.439281   <i>the value of the obliquity of the ecliptic for J2000</i>
+X<sub>EQ</sub> = X<sub>G</sub>
+Y<sub>EQ</sub> = Y<sub>G</sub>·cos(ecl) - Z<sub>G</sub>·sin(ecl)
+Z<sub>EQ</sub> = Y<sub>G</sub>·sin(ecl) + Z<sub>G</sub>·cos(ecl)
+</pre>
+</blockquote>
+
+<p><u>The RA and DEC and the distance</u>
+</p><p>The geocentric equatorial coordinates are transformed into right ascension (RA) and 
+declination (DEC) using the formulas:
+</p><blockquote> 
+<pre>       / arctan(Y<sub>EQ</sub> / X<sub>EQ</sub>)
+RA  = &lt;  arctan(Y<sub>EQ</sub> / X<sub>EQ</sub>) + 180°  <i>if (X<sub>EQ</sub> &lt; 0)</i>
+       \ arctan(Y<sub>EQ</sub> / X<sub>EQ</sub>) + 360°  <i>if (X<sub>EQ</sub> &gt; 0) and (Y<sub>EQ</sub> &lt; 0)</i>  
+
+DEC = arctan( Z<sub>EQ</sub> / sqrt(X<sub>EQ</sub><sup>2</sup> + Y<sub>EQ</sub><sup>2</sup>) ) 
+</pre>
+</blockquote>
+<tt>RA</tt> can be converted from degrees into hour angle by dividing by 15.
+<p>The distance from the planet to Earth is computed using:
+</p><blockquote> 
+<pre>Distance = sqrt(X<sub>EQ</sub><sup>2</sup> + Y<sub>EQ</sub><sup>2</sup> + Z<sub>EQ</sub><sup>2</sup>)          
+</pre>
+</blockquote>
+
+<h3>Zeno source code</h3>
+<p>
+<b>Zeno 1.2</b> is an interpreter for the Zeno programming language. It is an easy 
+to learn and is suitable for educational purposes. 
+</p><ul>
+<li><a href="http://home.att.net/%7Esrschmitt/zeno.html">Download Page</a> 
+</li></ul>
+<hr>
+<pre><b>const</b> pi   : <b>real</b> := 4 * arctan(1)
+<b>const</b> degs : <b>real</b> := 180 / pi
+<b>const</b> rads : <b>real</b> := pi / 180
+<b>const</b> eps  : <b>real</b> := 1.0e-12
+
+<b>type</b> elem : <b>record</b>
+            a : <b>real</b>  <i>% semi-major axis [AU]</i>
+            e : <b>real</b>  <i>% eccentricity of orbit</i>
+            i : <b>real</b>  <i>% inclination of orbit [deg]</i>
+            O : <b>real</b>  <i>% longitude of the ascending node [deg]</i>
+            w : <b>real</b>  <i>% longitude of perihelion [deg]</i>
+            L : <b>real</b>  <i>% mean longitude [deg]</i>
+            <b>end</b> <b>record</b>
+
+<b>type</b> coord : <b>record</b>
+             ra, dec, rvec : <b>real</b>
+             <b>end</b> <b>record</b>
+
+<b>program</b>
+
+    <b>var</b> year, month, day, hour, mins, p : <b>int</b>
+    
+    <i>% get the date and universal time</i>
+    year  := get_int( "year" )
+    month := get_int( "month" )
+    day   := get_int( "day" )
+    hour  := get_int( "hour" )
+    mins  := get_int( "minute" )
+
+    <i>% compute day number for date/time</i>
+    <b>var</b> d : <b>real</b> := day_number( year, month, day, hour, mins )
+
+    <b>put</b> "Date: ", month, "/", day, "/", year, " UT: ", hour, ":", mins
+    <b>put</b> "days since J2000: ", d
+    <b>put</b> ""    
+    <b>put</b> "Object      RA        DEC       Distance"
+    <b>put</b> "----------------------------------------"
+
+    <i>% compute location of objects</i>
+    <b>for</b> p := 1...9 <b>do</b>  
+
+        <b>var</b> obj : coord
+        get_coord( obj, p, d )
+   
+        <b>put</b> pname(p)...
+        <b>put</b> " ", ha2str(obj.ra*degs)...
+        <b>put</b> " ", dec2str(obj.dec*degs)...
+        <b>put</b> " ", obj.rvec:10:6
+
+    <b>end</b> <b>for</b>
+
+    <b>put</b> ""
+
+<b>end</b> <b>program</b>
+
+<i>% day number to/from J2000 (Jan 1.5, 2000)</i>
+<b>function</b> day_number( y, m, d, hour, mins : <b>int</b> ) : <b>real</b>
+
+    <b>var</b> rv : <b>real</b>
+    <b>var</b> h  : <b>real</b> := hour + mins / 60
+    
+    rv := 367*y - 7*(y + (m + 9) <b>div</b> 12) <b>div</b> 4 
+        + 275*m <b>div</b> 9 + d - 730531.5 + h / 24
+
+    <b>return</b> rv
+    
+<b>end</b> <b>function</b>
+
+<i>% compute RA, DEC, and distance of planet-p for day number-d
+% result returned in structure obj</i>
+<b>procedure</b> get_coord( <b>var</b> obj : coord, p : <b>int</b>, d : <b>real</b> )
+
+    <b>var</b> planet : elem
+    mean_elements( planet, p, d )
+    <b>var</b> ap : <b>real</b> := planet.a
+    <b>var</b> ep : <b>real</b> := planet.e
+    <b>var</b> ip : <b>real</b> := planet.i
+    <b>var</b> op : <b>real</b> := planet.O
+    <b>var</b> pp : <b>real</b> := planet.w
+    <b>var</b> lp : <b>real</b> := planet.L
+
+    <b>var</b> earth : elem
+    mean_elements( earth, 3, d ) 
+    <b>var</b> ae : <b>real</b> := earth.a
+    <b>var</b> ee : <b>real</b> := earth.e
+    <b>var</b> ie : <b>real</b> := earth.i
+    <b>var</b> oe : <b>real</b> := earth.O
+    <b>var</b> pe : <b>real</b> := earth.w
+    <b>var</b> le : <b>real</b> := earth.L    
+    
+    <i>% position of Earth in its orbit</i>
+    <b>var</b> me : <b>real</b> := mod2pi(le - pe)
+    <b>var</b> ve : <b>real</b> := true_anomaly(me, ee)
+    <b>var</b> re : <b>real</b> := ae*(1 - ee*ee) / (1 + ee*cos(ve))
+    
+    <i>% heliocentric rectangular coordinates of Earth</i>
+    <b>var</b> xe : <b>real</b> := re*cos(ve + pe)
+    <b>var</b> ye : <b>real</b> := re*sin(ve + pe)
+    <b>var</b> ze : <b>real</b> := 0
+    
+    <i>% position of planet in its orbit</i>
+    <b>var</b> mp : <b>real</b> := mod2pi(lp - pp)
+    <b>var</b> vp : <b>real</b> := true_anomaly(mp, planet.e)
+    <b>var</b> rp : <b>real</b> := ap*(1 - ep*ep) / (1 + ep*cos(vp))
+    
+    <i>% heliocentric rectangular coordinates of planet</i>
+    <b>var</b> xh : <b>real</b> := rp*(cos(op)*cos(vp + pp - op) - sin(op)*sin(vp + pp - op)*cos(ip))
+    <b>var</b> yh : <b>real</b> := rp*(sin(op)*cos(vp + pp - op) + cos(op)*sin(vp + pp - op)*cos(ip))
+    <b>var</b> zh : <b>real</b> := rp*(sin(vp + pp - op)*sin(ip))
+
+    <b>if</b> p = 3 <b>then</b>                       <i>% earth --&gt; compute sun</i>
+        xh := 0
+        yh := 0
+        zh := 0
+    <b>end</b> <b>if</b>
+    
+    <i>% convert to geocentric rectangular coordinates</i>
+    <b>var</b> xg : <b>real</b> := xh - xe
+    <b>var</b> yg : <b>real</b> := yh - ye
+    <b>var</b> zg : <b>real</b> := zh - ze
+    
+    <i>% rotate around x axis from ecliptic to equatorial coords</i>
+    <b>var</b> ecl : <b>real</b> := 23.439281*rads    <i>%value for J2000.0 frame</i>
+    <b>var</b> xeq : <b>real</b> := xg
+    <b>var</b> yeq : <b>real</b> := yg*cos(ecl) - zg*sin(ecl)
+    <b>var</b> zeq : <b>real</b> := yg*sin(ecl) + zg*cos(ecl)
+    
+    <i>% find the RA and DEC from the rectangular equatorial coords</i>
+    obj.ra   := mod2pi( arctanxy(xeq, yeq) )
+    obj.dec  := arctan(zeq / sqrt(xeq*xeq + yeq*yeq))
+    obj.rvec := sqrt(xeq*xeq + yeq*yeq + zeq*zeq)
+
+<b>end</b> <b>procedure</b>
+
+<i>% Compute the elements of the orbit for planet-i at day number-d
+% result is returned in structure p</i>
+<b>procedure</b> mean_elements( <b>var</b> p : elem, i : <b>int</b>, d : <b>real</b> )
+
+    <b>var</b> cy : <b>real</b> := d / 36525          <i>% centuries since J2000</i>
+
+    <b>case</b> i <b>of</b>
+    <b>value</b> 1: <i>% Mercury</i>
+        p.a := 0.38709893 + 0.00000066*cy
+        p.e := 0.20563069 + 0.00002527*cy
+        p.i := ( 7.00487  -  23.51*cy/3600)*rads
+        p.O := (48.33167  - 446.30*cy/3600)*rads
+        p.w := (77.45645  + 573.57*cy/3600)*rads
+        p.L := mod2pi((252.25084 + 538101628.29*cy/3600)*rads)
+    <b>value</b> 2: <i>% Venus</i>
+        p.a := 0.72333199 + 0.00000092*cy
+        p.e := 0.00677323 - 0.00004938*cy
+        p.i := (  3.39471 -   2.86*cy/3600)*rads
+        p.O := ( 76.68069 - 996.89*cy/3600)*rads
+        p.w := (131.53298 - 108.80*cy/3600)*rads
+        p.L := mod2pi((181.97973 + 210664136.06*cy/3600)*rads)
+    <b>value</b> 3: <i>% Earth/Sun</i>
+        p.a := 1.00000011 - 0.00000005*cy
+        p.e := 0.01671022 - 0.00003804*cy
+        p.i := (  0.00005 -    46.94*cy/3600)*rads
+        p.O := (-11.26064 - 18228.25*cy/3600)*rads
+        p.w := (102.94719 +  1198.28*cy/3600)*rads
+        p.L := mod2pi((100.46435 + 129597740.63*cy/3600)*rads)
+    <b>value</b> 4: <i>% Mars</i>
+        p.a := 1.52366231 - 0.00007221*cy
+        p.e := 0.09341233 + 0.00011902*cy
+        p.i := (  1.85061 -   25.47*cy/3600)*rads
+        p.O := ( 49.57854 - 1020.19*cy/3600)*rads
+        p.w := (336.04084 + 1560.78*cy/3600)*rads
+        p.L := mod2pi((355.45332 + 68905103.78*cy/3600)*rads)
+    <b>value</b> 5: <i>% Jupiter</i>
+        p.a := 5.20336301 + 0.00060737*cy
+        p.e := 0.04839266 - 0.00012880*cy
+        p.i := (  1.30530 -    4.15*cy/3600)*rads
+        p.O := (100.55615 + 1217.17*cy/3600)*rads
+        p.w := ( 14.75385 +  839.93*cy/3600)*rads
+        p.L := mod2pi((34.40438 + 10925078.35*cy/3600)*rads)
+    <b>value</b> 6: <i>% Saturn</i>
+        p.a := 9.53707032 - 0.00301530*cy
+        p.e := 0.05415060 - 0.00036762*cy
+        p.i := (  2.48446 +    6.11*cy/3600)*rads
+        p.O := (113.71504 - 1591.05*cy/3600)*rads
+        p.w := ( 92.43194 - 1948.89*cy/3600)*rads
+        p.L := mod2pi((49.94432 + 4401052.95*cy/3600)*rads)
+    <b>value</b> 7: <i>% Uranus</i>
+        p.a := 19.19126393 + 0.00152025*cy
+        p.e :=  0.04716771 - 0.00019150*cy
+        p.i := (  0.76986  -    2.09*cy/3600)*rads
+        p.O := ( 74.22988  - 1681.40*cy/3600)*rads
+        p.w := (170.96424  + 1312.56*cy/3600)*rads
+        p.L := mod2pi((313.23218 + 1542547.79*cy/3600)*rads)
+    <b>value</b> 8: <i>% Neptune</i>
+        p.a := 30.06896348 - 0.00125196*cy
+        p.e :=  0.00858587 + 0.00002510*cy
+        p.i := (  1.76917  -   3.64*cy/3600)*rads
+        p.O := (131.72169  - 151.25*cy/3600)*rads
+        p.w := ( 44.97135  - 844.43*cy/3600)*rads
+        p.L := mod2pi((304.88003 + 786449.21*cy/3600)*rads)
+    <b>value</b> 9: <i>% Pluto</i>
+        p.a := 39.48168677 - 0.00076912*cy
+        p.e :=  0.24880766 + 0.00006465*cy
+        p.i := ( 17.14175  +  11.07*cy/3600)*rads
+        p.O := (110.30347  -  37.33*cy/3600)*rads
+        p.w := (224.06676  - 132.25*cy/3600)*rads
+        p.L := mod2pi((238.92881 + 522747.90*cy/3600)*rads)
+    <b>value</b>:
+        <b>assert</b> <b>false</b>
+    <b>end</b> <b>case</b>
+    
+<b>end</b> <b>procedure</b>
+
+<i>% compute the true anomaly from mean anomaly using iteration
+%  M - mean anomaly in radians
+%  e - orbit eccentricity</i>
+<b>function</b> true_anomaly( M, e : <b>real</b> ) : <b>real</b>
+    
+    <b>var</b> V, E, E1 : <b>real</b>
+
+    <i>% initial approximation of eccentric anomaly</i>
+    E := M + e*sin(M)*(1.0 + e*cos(M))
+
+    <i>% iterate to improve accuracy</i>
+    <b>repeat</b>
+        E1 := E
+        E := E1 - (E1 - e*sin(E1) - M)/(1 - e*cos(E1))
+    <b>until</b> abs( E - E1 ) &lt; eps
+
+    <i>% convert eccentric anomaly to true anomaly</i>
+    V := 2*arctan(sqrt((1 + e)/(1 - e))*tan(0.5*E))
+
+    <i>% modulo 2pi</i>
+    <b>if</b> (V &lt; 0) <b>then</b>
+        V := V + (2*pi) 
+    <b>end</b> <b>if</b>
+    
+    <b>return</b> V
+
+<b>end</b> <b>function</b>
+
+<i>% converts hour angle in degrees into hour angle string</i>
+<b>function</b> ha2str( x : <b>real</b> ) : string
+
+    <b>assert</b> (0 &lt;= x) <b>and</b> (x &lt; 360)       <i>% assure valid range</i>
+    <b>var</b> ra : <b>real</b> := x / 15             <i>% degrees to hours</i>
+    <b>var</b> h : <b>int</b> := floor( ra )
+    <b>var</b> m : <b>real</b> := 60 * ( ra - h )
+    <b>return</b> intstr( h, 3 ) &amp; "h " &amp; frealstr( m, 4, 1 ) &amp; "m"
+
+<b>end</b> <b>function</b>
+
+<i>% converts declination angle in degrees into string</i>
+<b>function</b> dec2str( x : <b>real</b> ) : string
+
+    <b>assert</b> (-90 &lt;= x) <b>and</b> (x &lt;= +90)     <i>% assure valid range</i>
+    <b>var</b> dec : <b>real</b> := abs( x )           <i>% work with absolute value</i>
+    <b>var</b> d : <b>int</b> := floor( dec )
+    <b>var</b> m : <b>real</b> := 60 * ( dec - d )
+    <b>return</b> intstr( sgn(x)*d, 3 ) &amp; "° " &amp; frealstr( m, 4, 1 ) &amp; "'"
+
+<b>end</b> <b>function</b>
+
+<i>% get object name</i>
+<b>function</b> pname( i : <b>int</b> ) : string
+
+    <b>case</b> i <b>of</b>
+    <b>value</b> 1 : <b>return</b> "Mercury"
+    <b>value</b> 2 : <b>return</b> "Venus  "
+    <b>value</b> 3 : <b>return</b> "Sun    "
+    <b>value</b> 4 : <b>return</b> "Mars   "
+    <b>value</b> 5 : <b>return</b> "Jupiter"
+    <b>value</b> 6 : <b>return</b> "Saturn "
+    <b>value</b> 7 : <b>return</b> "Uranus "
+    <b>value</b> 8 : <b>return</b> "Neptune"
+    <b>value</b> 9 : <b>return</b> "Pluto  "
+    <b>end</b> <b>case</b>
+
+    <b>return</b> "not in range"
+
+<b>end</b> <b>function</b>
+
+<i>% prompts for input of an int</i>
+<b>function</b> get_int( prompt : string ) : <b>int</b>
+
+    <b>var</b> n : <b>int</b>
+    <b>put</b> prompt...
+    <b>get</b> n
+    <b>return</b> n
+
+<b>end</b> <b>function</b>
+
+<i>% return the integer part of a number</i>
+<b>function</b> abs_floor( x : <b>real</b> ) : <b>int</b>
+
+    <b>var</b> r : <b>int</b>
+
+    <b>if</b> x &gt;= 0.0 <b>then</b>
+        r := floor( x )
+    <b>else</b>
+        r := ceil( x )
+    <b>end</b> <b>if</b>
+
+    <b>return</b> r
+
+<b>end</b> <b>function</b>
+
+<i>% return an angle in the range 0 to 2pi</i>
+<b>function</b> mod2pi( x : <b>real</b> ) : <b>real</b>     <i>% radians</i>
+    
+    <b>var</b> b : <b>real</b> := x / (2*pi)
+    <b>var</b> a : <b>real</b> := (2*pi)*(b - abs_floor(b))
+    
+    <b>if</b> a &lt; 0 <b>then</b>
+        a := (2*pi) + a 
+    <b>end</b> <b>if</b>
+    
+    <b>return</b> a
+    
+<b>end</b> <b>function</b>
+
+<i>% returns absolute value of real number</i>
+<b>function</b> abs( x : <b>real</b> ) : <b>real</b>
+
+    <b>if</b> x &lt; 0 <b>then</b>
+        <b>return</b> -x
+    <b>end</b> <b>if</b>
+
+    <b>return</b> x
+
+<b>end</b> <b>function</b>
+
+<i>% returns sign of real number as int</i>
+<b>function</b> sgn( x : <b>real</b> ) : <b>int</b>
+
+    <b>if</b> x &lt; 0 <b>then</b>
+        <b>return</b> -1
+    <b>end</b> <b>if</b>
+
+    <b>return</b> +1
+
+<b>end</b> <b>function</b>
+</pre>
+
+<h3>Sample output</h3>
+<pre>year? 2004
+month? 5
+day? 1
+hour? 0
+minute? 0
+Date: 5/1/2004 UT: 0:0
+days since J2000: 1581.5
+ 
+Object      RA        DEC       Distance
+----------------------------------------
+Mercury   1h 20.5m   6° 34.4'   0.633271
+Venus     5h 20.1m  27° 43.9'   0.462291
+Sun       2h 33.9m  15°  5.9'   1.007611
+Mars      5h 42.0m  24° 36.1'   2.166172
+Jupiter  10h 44.1m   9° 28.4'   4.879948
+Saturn    6h 37.7m  22° 45.8'   9.527284
+Uranus   22h 32.5m  -9° 58.4'  20.458105
+Neptune  21h 11.0m -16° 18.3'  30.133788
+Pluto    17h 26.7m -14° 17.4'  30.032601
+</pre>
+
+<h3>References</h3>
+<ol>
+<li>US Naval Observatory, <i>Explanatory Supplement to the Astronomical Almanac</i>, 1992
+</li><li><a href="http://www.amazon.com/gp/associates/link-types/marketplace.html?t=topicsincompu-20&amp;asin=0943396611">Astronomical Algorithms, Meeus</a>
+</li><li><a href="http://www.amazon.com/gp/associates/link-types/marketplace.html?t=topicsincompu-20&amp;asin=0521356997">Practical Astronomy with your Calculator</a>
+</li></ol>
+
+<hr>
+<center>
+<iframe src="planetorbits_fichiers/cm.htm" marginwidth="0" marginheight="0" border="2" style="border: medium none ;" frameborder="0" height="240" scrolling="no" width="468"></iframe>
+</center>
+<hr>
+
+<script>document.write(comm_junct_1())</script><table width="100%"><tbody><tr><td><a href="http://www.anrdoezrs.net/click-1574452-10371957" target="_top"><img src="planetorbits_fichiers/image-1574452-10371957.gif" alt="Free-CDSoftware.com" border="0" height="60" width="120"></a></td><td><a href="http://www.kqzyfj.com/click-1574452-10276122" target="_top"><img src="planetorbits_fichiers/image-1574452-10276122.gif" alt="Academic Superstore" border="0" height="60" width="120"></a></td><td><a href="http://www.tkqlhce.com/click-1574452-10279961" target="_top"><img src="planetorbits_fichiers/image-1574452-10279961.gif" alt="256MB PC133" border="0" height="60" width="120"></a></td><td><a href="http://www.kqzyfj.com/click-1574452-3881859" target="_top"><img src="planetorbits_fichiers/image-1574452-3881859.gif" alt="Easy. Fast. Cheap." border="0" height="60" width="120"></a></td><td><a href="http://www.anrdoezrs.net/click-1574452-10379090" target="_top"><img src="planetorbits_fichiers/image-1574452-10379090.gif" alt="Get a FREE 2-week trial from Netflix!" border="0" height="90" width="120"></a></td></tr></tbody></table>
+
+<hr>
+Copyright © 2005, Stephen R. Schmitt
+</body></html>

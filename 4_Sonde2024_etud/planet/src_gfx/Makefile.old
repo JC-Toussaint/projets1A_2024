@@ -1,0 +1,22 @@
+# Makefile du Projet: sonde
+#
+CC   = gcc -g -std=gnu11
+OBJ  = gfx.o DayNumber.o GetHelioCoord.o GetOrbitalElements.o\
+	 InitAstreDB.o TrueAnomaly.o mod2pi.o InitGraph.o main.o 
+
+LIBS =  -L/usr/X11R6/lib -lX11 -lXext -L $(HOME)/extralib/lib -lgsl -lgslcblas -lm
+
+INCS =  -I/usr/X11R6/include -I$(HOME)/extralib/include
+BIN  = sonde
+
+all:  $(BIN)
+
+clean:
+	rm -f $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CC) $(INCS) $(OBJ) -o $(BIN) $(LIBS)
+
+.c.o:
+	$(CC) $(INCS) -c $<
+

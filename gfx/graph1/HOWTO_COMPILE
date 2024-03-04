@@ -1,0 +1,4 @@
+gcc -I. -I/usr/X11R6/include main.c gfx.c -o graph1 -L/usr/X11R6/lib -lX11 -lXext -lm
+
+
+
