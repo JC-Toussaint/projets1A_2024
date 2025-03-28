@@ -16,11 +16,10 @@ for i=1:gp.NP-1
         delta=(dx*dvx+dy*dvy)^2-(dvx^2+dvy^2)*(dx^2+dy^2-4*gp.a^2);
         if delta>0
             tau=((-dx*dvx-dy*dvy)-sqrt(delta))/(dvx^2+dvy^2);
-        end
-        
-        if (tau > 0) && (tau<taumin)
+            if (tau > 0) && (tau<taumin)
                 taumin=tau;
                 np1=i; np2=j;
+            end
         end
         
     end
